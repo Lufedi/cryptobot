@@ -17,7 +17,9 @@ import org.knowm.xchange.ExchangeSpecification;
 
 import org.knowm.xchange.bittrex.BittrexExchange;
 import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.Ticker;
+import org.knowm.xchange.dto.trade.MarketOrder;
 import org.knowm.xchange.poloniex.PoloniexExchange;
 import org.knowm.xchange.service.marketdata.MarketDataService;
 import org.springframework.boot.CommandLineRunner;
@@ -50,6 +52,7 @@ import java.util.List;
 @Component
 public class Sandbox implements CommandLineRunner {
 
+
     private TradeRepository tradeRepository;
     private String[] pairs = {"BTC/STR"};
     private int MAXIMUM_TRADES = 3;
@@ -66,6 +69,7 @@ public class Sandbox implements CommandLineRunner {
     @Override
     public void run(String... strings) throws Exception {
         System.out.println("EXECUTING!!!!!!");
+        System.out.println(CurrencyPair.LTC_BTC.toString());
         ExchangeSpecification exchangeSpecification  = new PoloniexExchange().getDefaultExchangeSpecification();
         exchangeSpecification.setApiKey("4WGCHVI2-AHEJG9ZL-5YB0V4IC-X7KQCAU7");
         exchangeSpecification.setSecretKey("f1bc2090fb2188875d9e593c8f278ccfd837c37b1dfc1ee2433c005bd993e1428d2317a958fb0fb9a9c3f5994b1810b53f08c7c64a86933bab8d83490e6169a2");
@@ -80,19 +84,23 @@ public class Sandbox implements CommandLineRunner {
         Exchange bittrexExchange = ExchangeFactory.INSTANCE.createExchange(bittrexSpecification);
 
 
+        while(true){
 
-        List<Trade> trades =  tradeRepository.findAll();
+            List<Trade> trades =  tradeRepository.findAll();
 
-        for( Trade trade: trades){
-            tryToSell(trade, poloniexExchange);
-        }
+            for( Trade trade: trades){
+                tryToSell(trade, poloniexExchange);
+            }
 
-        if( trades.size() < MAXIMUM_TRADES){
-            tryToBuy(poloniexExchange);
-        }
+            if( trades.size() < MAXIMUM_TRADES){
+                tryToBuy(poloniexExchange);
+            }
 
-        for(String pair: pairs){
-            applyStrategy(pair, TICKER_INTERVAL, bittrexExchange);
+            for(String pair: pairs){
+                applyStrategy(pair, TICKER_INTERVAL, bittrexExchange);
+            }
+
+            Thread.sleep(300000);
         }
 
 
@@ -111,6 +119,20 @@ public class Sandbox implements CommandLineRunner {
         boolean buySignal = strategy.buySignal(indicators);
         System.out.println("buy signal " + buySignal);
 
+        boolean sellSignal  =  strategy.sellSignal(indicators);
+
+        if(buySignal){
+            //exchange.getTradeService().placeMarketOrder( new MarketOrder(Order.OrderType.BID, STAKE_AMOUNT, CurrencyPair.LTC_BTC));
+            System.out.println("Buying " + STAKE_AMOUNT.toString() + " LTC");
+
+            Trade trade =  new Trade();
+            trade.setExchange(exchange.getDefaultExchangeSpecification().getExchangeName());
+            trade.setAmount(STAKE_AMOUNT);
+            trade.isOpen();
+            trade.setPair( CurrencyPair.LTC_BTC.toString());
+
+            tradeRepository.save(trade);
+        }
         boolean a[] = {false, true};
         return  a;
     }
@@ -238,15 +260,15 @@ public class Sandbox implements CommandLineRunner {
         BittrexCandleResponse bittrexCandleResponse = gson.fromJson(response.toString(), BittrexCandleResponse.class);
 
 
-        System.out.println(bittrexCandleResponse.result);
-        System.out.println(bittrexCandleResponse.result.size());
+        //System.out.println(bittrexCandleResponse.result);
+        //System.out.println(bittrexCandleResponse.result.size());
 
         List<Candle> result = new ArrayList<>();
         for(BittrexCandle bittrexCandle: bittrexCandleResponse.result){
             result.add( bittrexCandle.toCandle());
         }
-
-
+        System.out.println(result.size());
+        System.out.println(result.get(result.size() - 1));
         return result;
 
     }
@@ -294,8 +316,8 @@ public class Sandbox implements CommandLineRunner {
         }
 
 
-        System.out.println(tickerList);
-        System.out.println(tickerList.size());
+        //System.out.println(tickerList);
+        //System.out.println(tickerList.size());
 
         return result;
     }

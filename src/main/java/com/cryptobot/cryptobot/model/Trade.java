@@ -8,6 +8,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import java.math.BigDecimal;
 
 /**
  * Created by Felipe Díaz on 15/04/2018.
@@ -24,7 +25,7 @@ public class Trade {
     private String exchange;
     private String pair;
     private boolean open;
-    private double amount;
-
-
+    private BigDecimal amount;
+    private BigDecimal priceOpen;
+    private BigDecimal priceClose;
 }
