@@ -1,10 +1,16 @@
 package com.cryptobot.cryptobot.Strategy;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.stereotype.Component;
+
 import java.util.HashMap;
 
 /**
  * Created by Felipe Díaz on 1/05/2018.
  */
+
+
+@Component
 public class SimpleStrategy  implements  Strategy{
 
 

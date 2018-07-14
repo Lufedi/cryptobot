@@ -1,5 +1,7 @@
 package com.cryptobot.cryptobot.Strategy;
 
+import org.springframework.stereotype.Component;
+
 import java.util.HashMap;
 
 /**

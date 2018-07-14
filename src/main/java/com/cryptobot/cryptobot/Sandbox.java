@@ -22,6 +22,7 @@ import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.trade.MarketOrder;
 import org.knowm.xchange.poloniex.PoloniexExchange;
 import org.knowm.xchange.service.marketdata.MarketDataService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.ta4j.core.BaseBar;
@@ -54,13 +55,16 @@ public class Sandbox implements CommandLineRunner {
 
 
     private TradeRepository tradeRepository;
-    private String[] pairs = {"BTC/STR"};
+    private CurrencyPair[] pairs = {CurrencyPair.BTC_STR};
     private int MAXIMUM_TRADES = 3;
     private int TICKER_INTERVAL = 5; //minutes
     private BigDecimal STAKE_AMOUNT = new BigDecimal("0.0000001");
     private String BITTREX_API = "6f422bb6421a43768803bb224f307f98";
     private String BITTREX_API_SECRET = "ac09a22e4c4849f1ad5c0dc9da88fd9d";
-    private Strategy strategy = new SimpleStrategy();
+
+
+    @Autowired
+    private Strategy strategy;
 
     public Sandbox(TradeRepository tradeRepository) {
         this.tradeRepository = tradeRepository;
@@ -69,18 +73,9 @@ public class Sandbox implements CommandLineRunner {
     @Override
     public void run(String... strings) throws Exception {
         System.out.println("EXECUTING!!!!!!");
-        System.out.println(CurrencyPair.LTC_BTC.toString());
-        ExchangeSpecification exchangeSpecification  = new PoloniexExchange().getDefaultExchangeSpecification();
-        exchangeSpecification.setApiKey("4WGCHVI2-AHEJG9ZL-5YB0V4IC-X7KQCAU7");
-        exchangeSpecification.setSecretKey("f1bc2090fb2188875d9e593c8f278ccfd837c37b1dfc1ee2433c005bd993e1428d2317a958fb0fb9a9c3f5994b1810b53f08c7c64a86933bab8d83490e6169a2");
-
-        Exchange poloniexExchange = ExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
-
-
         ExchangeSpecification bittrexSpecification = new BittrexExchange().getDefaultExchangeSpecification();
         bittrexSpecification.setApiKey(BITTREX_API);
         bittrexSpecification.setSecretKey(BITTREX_API_SECRET);
-
         Exchange bittrexExchange = ExchangeFactory.INSTANCE.createExchange(bittrexSpecification);
 
 
@@ -89,24 +84,19 @@ public class Sandbox implements CommandLineRunner {
             List<Trade> trades =  tradeRepository.findAll();
 
             for( Trade trade: trades){
-                tryToSell(trade, poloniexExchange);
+                tryToSell(trade, bittrexExchange);
             }
 
             if( trades.size() < MAXIMUM_TRADES){
-                tryToBuy(poloniexExchange);
+                tryToBuy(bittrexExchange);
             }
-
-            for(String pair: pairs){
-                applyStrategy(pair, TICKER_INTERVAL, bittrexExchange);
-            }
-
             Thread.sleep(300000);
         }
 
 
     }
 
-    private boolean[] applyStrategy(String pair, int interval, Exchange exchange)  throws Exception {
+    private boolean[] applyStrategy(CurrencyPair pair, int interval, Exchange exchange)  throws Exception {
         System.out.println("Applying strategy");
         MarketDataService  marketDataService = exchange.getMarketDataService();
 
@@ -130,7 +120,6 @@ public class Sandbox implements CommandLineRunner {
             trade.setAmount(STAKE_AMOUNT);
             trade.isOpen();
             trade.setPair( CurrencyPair.LTC_BTC.toString());
-
             tradeRepository.save(trade);
         }
         boolean a[] = {false, true};
@@ -177,7 +166,7 @@ public class Sandbox implements CommandLineRunner {
 
     }
 
-    private List<Candle> getTickerHistory(String pair, int interval, Exchange exchange) throws Exception{
+    private List<Candle> getTickerHistory(CurrencyPair pair, int interval, Exchange exchange) throws Exception{
         String name = exchange.getDefaultExchangeSpecification().getExchangeName();
         List<Candle> candles = null;
 
@@ -213,21 +202,44 @@ public class Sandbox implements CommandLineRunner {
         return  series;
     }
 
-    private void tryToBuy(Exchange exchange) throws  Exception, IOException{
-        MarketDataService  marketDataService = exchange.getMarketDataService();
-        Ticker ticker = marketDataService.getTicker(CurrencyPair.XRP_BTC);
+    private boolean tryToBuy(Exchange exchange) throws  Exception, IOException{
+        if( createTrade(exchange)){
+            return true;
+        }else{
+            System.out.println("Found no buy signals for whitelisted currencies. Trying again..");
+        }
+        return false;
+    }
 
-        System.out.println("ticker.getBid() " + ticker.getBid());
-        System.out.println( STAKE_AMOUNT.compareTo(ticker.getBid()) );
-        if( STAKE_AMOUNT.compareTo(ticker.getBid()) > 0){
-            System.out.println("trying to buy");
-            throw  new Exception("Stake amount is greater than currenct bid price");
+    private boolean createTrade(Exchange exchange) throws  Exception{
+
+        CurrencyPair buyingPair = null;
+        for(CurrencyPair pair: pairs){
+            boolean buySell[] = applyStrategy(pair, TICKER_INTERVAL, exchange);
+            if (buySell[0]){
+                buyingPair = pair;
+                break;
+            }
         }
 
+        Ticker exchangeTicker = exchange.getMarketDataService().getTicker(CurrencyPair.BAT_BTC);
+        BigDecimal buyLimit = getTargetBid(exchangeTicker);
+        BigDecimal minStakeAmount = getMinStakeAmount(buyingPair, buyLimit);
+
+        return false;
+    }
+
+    private BigDecimal getMinStakeAmount(CurrencyPair pair, BigDecimal price){
 
 
     }
-
+    private BigDecimal getTargetBid(Ticker ticker){
+        if( ticker.getAsk().compareTo(ticker.getLast()) < 0 ){
+            return  ticker.getAsk();
+        }else{
+            return ticker.getAsk().add(ticker.getLast().subtract(ticker.getAsk()));
+        }
+    }
 
     private  void tryToSell(Trade trade, Exchange exchange){
         if( trade.isOpen()){
@@ -236,7 +248,7 @@ public class Sandbox implements CommandLineRunner {
     }
 
 
-    private List<Candle> getBittrexTickerHistory(String pair, int interval, Exchange exchange) throws  Exception{
+    private List<Candle> getBittrexTickerHistory(CurrencyPair pair, int interval, Exchange exchange) throws  Exception{
         String market = "BTC-LTC";
         String url = "https://bittrex.com/Api/v2.0/pub/market/GetTicks?marketName=" + market + "&tickInterval=fiveMin&";
 
@@ -273,7 +285,7 @@ public class Sandbox implements CommandLineRunner {
 
     }
     // HTTP GET request
-    private List<Candle> getPoloniexTickerHistory(String pair, int interval, Exchange exchange) throws Exception {
+    private List<Candle> getPoloniexTickerHistory(CurrencyPair pair, int interval, Exchange exchange) throws Exception {
         String currencyPairSymbol = "BTC_NXT";
         LocalDateTime endTime = LocalDateTime.of(LocalDate.now(), LocalTime.now());
         LocalDateTime startTime = endTime.minusDays(10);
