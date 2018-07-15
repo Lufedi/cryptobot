@@ -4,10 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import javax.persistence.*;
 import java.math.BigDecimal;
 
 /**
@@ -25,7 +22,11 @@ public class Trade {
     private String exchange;
     private String pair;
     private boolean open;
-    private BigDecimal amount;
-    private BigDecimal priceOpen;
-    private BigDecimal priceClose;
+
+    @Column(precision = 10, scale = 10)
+    private BigDecimal amount = BigDecimal.ZERO;
+    @Column(precision = 10, scale = 10)
+    private BigDecimal priceOpen = BigDecimal.ZERO;
+    @Column(precision = 10, scale =  10)
+    private BigDecimal priceClose = BigDecimal.ZERO;
 }

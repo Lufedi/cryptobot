@@ -1,44 +1,30 @@
-package com.cryptobot.cryptobot;
+package com.cryptobot.cryptobot.service;
+
 
 import com.cryptobot.cryptobot.DTO.BittrexCandle;
 import com.cryptobot.cryptobot.DTO.BittrexCandleResponse;
-import com.cryptobot.cryptobot.DTO.PoloniexCandle;
 import com.cryptobot.cryptobot.DTO.Candle;
-import com.cryptobot.cryptobot.Strategy.SimpleStrategy;
+import com.cryptobot.cryptobot.DTO.PoloniexCandle;
 import com.cryptobot.cryptobot.Strategy.Strategy;
 import com.cryptobot.cryptobot.model.Trade;
 import com.cryptobot.cryptobot.repositories.TradeRepository;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import org.knowm.xchange.Exchange;
-import org.knowm.xchange.ExchangeFactory;
-import org.knowm.xchange.ExchangeSpecification;
 
-import org.knowm.xchange.bittrex.BittrexExchange;
+import lombok.extern.slf4j.Slf4j;
+import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
-import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.Ticker;
-import org.knowm.xchange.dto.trade.MarketOrder;
-import org.knowm.xchange.poloniex.PoloniexExchange;
-import org.knowm.xchange.service.BaseExchangeService;
-import org.knowm.xchange.service.account.AccountService;
 import org.knowm.xchange.service.marketdata.MarketDataService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Service;
 import org.ta4j.core.BaseBar;
 import org.ta4j.core.BaseTimeSeries;
-
 import org.ta4j.core.TimeSeries;
-import org.ta4j.core.indicators.RSIIndicator;
-import org.ta4j.core.indicators.StochasticOscillatorDIndicator;
-import org.ta4j.core.indicators.adx.ADXIndicator;
-import org.ta4j.core.indicators.adx.PlusDIIndicator;
-import org.ta4j.core.indicators.helpers.ClosePriceIndicator;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -49,74 +35,49 @@ import java.net.URL;
 import java.time.*;
 import java.util.*;
 
-/**
- * Created by Felipe Díaz on 15/04/2018.
- */
-@Component
-public class Sandbox implements CommandLineRunner {
 
+@Slf4j
+@Service
+public class CryptobotService {
 
-    private TradeRepository tradeRepository;
     private CurrencyPair[] pairs = {
             //CurrencyPair.LTC_BTC,
             CurrencyPair.ETH_BTC,
             //CurrencyPair.DASH_BTC,
             //CurrencyPair.ZEC_BTC,
-            };
-
-    /*
-      "ETH/BTC",
-            "LTC/BTC",
-            "ETC/BTC",
-            "DASH/BTC",
-            "ZEC/BTC",
-            "XLM/BTC",
-            "NXT/BTC",
-            "POWR/BTC",
-            "ADA/BTC",
-            "XMR/BTC"
-     */
+    };
     private int MAXIMUM_TRADES = 3;
     private int TICKER_INTERVAL = 5; //minutes
     private BigDecimal STAKE_AMOUNT = new BigDecimal("0.0000001");
     private String BITTREX_API = "6f422bb6421a43768803bb224f307f98";
     private String BITTREX_API_SECRET = "ac09a22e4c4849f1ad5c0dc9da88fd9d";
 
-    private Hashtable<String, BigDecimal>  minimunStake= new Hashtable<>();
+    private Hashtable<String, BigDecimal> minimunStake= new Hashtable<>();
+
 
 
     @Autowired
     private Strategy strategy;
 
-    public Sandbox(TradeRepository tradeRepository) {
+    private TradeRepository tradeRepository;
+
+    private ExchangeService exchangeService;
+
+    private IndicatorsService indicatorsService;
+
+    public CryptobotService(TradeRepository tradeRepository, ExchangeService exchangeService, IndicatorsService indicatorsService) {
         this.tradeRepository = tradeRepository;
+        this.exchangeService = exchangeService;
+        this.indicatorsService = indicatorsService;
     }
 
-    @Override
-    public void run(String... strings) throws Exception {
+    @Scheduled(fixedRate = 10000)
+    public void runBot() throws  Exception{
 
+        try{
 
-//        internalRun();
-
-    }
-
-    private  void internalRun() throws Exception{
-        System.out.println("EXECUTING!!!!!!");
-        ExchangeSpecification bittrexSpecification = new BittrexExchange().getDefaultExchangeSpecification();
-        bittrexSpecification.setApiKey(BITTREX_API);
-        bittrexSpecification.setSecretKey(BITTREX_API_SECRET);
-        Exchange bittrexExchange = ExchangeFactory.INSTANCE.createExchange(bittrexSpecification);
-
-        System.out.println("exhange str" + bittrexExchange.toString());
-        minimunStake.put(bittrexExchange.toString(), new BigDecimal("0.00001"));
-
-
-        AccountService accountService = bittrexExchange.getAccountService();
-        System.out.println("balance");
-        System.out.println(((BittrexAccountServiceRaw) accountService).getBittrexBalance(Currency.BTC));
-        System.out.println("balance");
-
-        while(true){
+            Exchange bittrexExchange = exchangeService.getExchange();
+            minimunStake.put(bittrexExchange.toString(), new BigDecimal("0.00001"));
 
             List<Trade> trades =  tradeRepository.findAll();
 
@@ -127,20 +88,27 @@ public class Sandbox implements CommandLineRunner {
             if( trades.size() < MAXIMUM_TRADES){
                 tryToBuy(bittrexExchange);
             }
-            Thread.sleep(300000);
-        }
 
+
+
+        }catch (Exception e){
+            log.error(e.getMessage());
+            throw e;
+        }
     }
 
+
+
+
     private boolean[] applyStrategy(CurrencyPair pair, int interval, Exchange exchange)  throws Exception {
-        System.out.println("Applying strategy");
-        MarketDataService  marketDataService = exchange.getMarketDataService();
+
+        MarketDataService marketDataService = exchange.getMarketDataService();
 
         List<Candle> listCandle =    getTickerHistory(pair, interval, exchange);
 
         TimeSeries timeSeries = parseTickers(listCandle);
 
-        HashMap<String, Integer> indicators = calculateIndicators(timeSeries);
+        HashMap<String, Integer> indicators =  indicatorsService.calculateIndicators(timeSeries);
 
         boolean buySignal = strategy.buySignal(indicators);
         System.out.println("buy signal " + buySignal);
@@ -157,45 +125,6 @@ public class Sandbox implements CommandLineRunner {
         return  a;
     }
 
-
-    private HashMap<String , Integer> calculateIndicators(TimeSeries timeSeries){
-        HashMap<String, Integer> indicators = new HashMap<>();
-
-
-        ClosePriceIndicator closePrice = new ClosePriceIndicator(timeSeries);
-        int LAST_INDEX = timeSeries.getEndIndex()-1;
-        //RSI
-        RSIIndicator rsiIndicator  = new RSIIndicator(closePrice, 14);
-        int value =  rsiIndicator.getValue(LAST_INDEX).intValue();
-        indicators.put( "rsi",value);
-
-        System.out.println("f"+ value + " in " + timeSeries.getEndIndex());
-
-        //ADX
-        ADXIndicator adxIndicator = new ADXIndicator(timeSeries, 14);
-        value = adxIndicator.getValue( LAST_INDEX).intValue();
-        indicators.put( "adx",value);
-        System.out.println("adx " + value);
-
-        //PLUS DI
-        PlusDIIndicator plusDIIndicator = new PlusDIIndicator(timeSeries, 14);
-        value = plusDIIndicator.getValue(LAST_INDEX).intValue();
-        indicators.put("plus_di", value);
-        System.out.println("plus_di" + value);
-
-
-        //FASTD
-        StochasticOscillatorDIndicator stochasticOscillatorDIndicator = new StochasticOscillatorDIndicator(closePrice);
-        value = stochasticOscillatorDIndicator.getValue(LAST_INDEX).intValue();
-        indicators.put("fastd", value);
-        System.out.println("fast " +value);
-
-
-
-
-        return  indicators;
-
-    }
 
     private List<Candle> getTickerHistory(CurrencyPair pair, int interval, Exchange exchange) throws Exception{
         String name = exchange.getDefaultExchangeSpecification().getExchangeName();
@@ -233,14 +162,6 @@ public class Sandbox implements CommandLineRunner {
         return  series;
     }
 
-    private boolean tryToBuy(Exchange exchange) throws  Exception, IOException{
-        if( createTrade(exchange)){
-            return true;
-        }else{
-            System.out.println("Found no buy signals for whitelisted currencies. Trying again..");
-        }
-        return false;
-    }
 
     private boolean createTrade(Exchange exchange) throws  Exception{
 
@@ -395,4 +316,14 @@ public class Sandbox implements CommandLineRunner {
         }
         return Optional.empty();
     }
+
+    private boolean tryToBuy(Exchange exchange) throws  Exception, IOException {
+        if( createTrade(exchange)){
+            return true;
+        }else{
+            System.out.println("Found no buy signals for whitelisted currencies. Trying again..");
+        }
+        return false;
+    }
+
 }
