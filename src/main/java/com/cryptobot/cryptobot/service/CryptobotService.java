@@ -114,13 +114,13 @@ public class CryptobotService {
         HashMap<String, Integer> indicators =  indicatorsService.calculateIndicators(timeSeries);
 
         boolean buySignal = strategy.buySignal(indicators);
-        System.out.println("buy signal " + buySignal);
+        log.debug("buy signal " + buySignal);
 
         boolean sellSignal  =  strategy.sellSignal(indicators);
 
         if(buySignal){
             //
-            System.out.println("Buying " + STAKE_AMOUNT.toString() + " LTC");
+            log.debug("Buying " + STAKE_AMOUNT.toString() + " LTC");
 
 
         }
@@ -191,8 +191,8 @@ public class CryptobotService {
         }
 
         BigDecimal quantity = stakeAmount.get().divide(buyLimit, BigDecimal.ROUND_HALF_DOWN);
-        System.out.println("Buying " +  buyingPair + " qty: "+ quantity + " buyLimit: " + buyLimit);
-
+        
+        log.debug("Buying " +  buyingPair + " qty: "+ quantity + " buyLimit: " + buyLimit);
         String orderId = "pp";
         /*String orderId = exchange.getTradeService().placeLimitOrder(
                 new LimitOrder( Order.OrderType.BID, quantity, buyingPair, null, null, buyLimit)
@@ -257,16 +257,11 @@ public class CryptobotService {
         //Type collectionType = new TypeToken<List<PoloniexCandle>>() {}.getType();
         BittrexCandleResponse bittrexCandleResponse = gson.fromJson(response.toString(), BittrexCandleResponse.class);
 
-
-        //System.out.println(bittrexCandleResponse.result);
-        //System.out.println(bittrexCandleResponse.result.size());
-
         List<Candle> result = new ArrayList<>();
         for(BittrexCandle bittrexCandle: bittrexCandleResponse.result){
             result.add( bittrexCandle.toCandle());
         }
-        System.out.println(result.size());
-        System.out.println(result.get(result.size() - 1));
+
         return result;
 
     }
@@ -291,7 +286,7 @@ public class CryptobotService {
         con.setRequestMethod("GET");
 
         int responseCode = con.getResponseCode();
-        System.out.println("\nSending 'GET' request to URL : " + url);
+        log.debug("\nSending 'GET' request to URL : " + url);
 
         BufferedReader in = new BufferedReader(
                 new InputStreamReader(con.getInputStream()));
@@ -314,8 +309,6 @@ public class CryptobotService {
         }
 
 
-        //System.out.println(tickerList);
-        //System.out.println(tickerList.size());
 
         return result;
     }
@@ -335,7 +328,7 @@ public class CryptobotService {
         if( createTrade(exchange)){
             return true;
         }else{
-            System.out.println("Found no buy signals for whitelisted currencies. Trying again..");
+            log.debug("Found no buy signals for whitelisted currencies. Trying again..");
         }
         return false;
     }
