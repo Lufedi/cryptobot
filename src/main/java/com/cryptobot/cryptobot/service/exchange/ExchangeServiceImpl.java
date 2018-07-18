@@ -1,4 +1,4 @@
-package com.cryptobot.cryptobot.service;
+package com.cryptobot.cryptobot.service.exchange;
 
 
 import org.knowm.xchange.Exchange;
@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 
 @Component
-public class ExchangeService {
+public class ExchangeServiceImpl implements ExchangeService {
 
 
     private String BITTREX_API = "6f422bb6421a43768803bb224f307f98";

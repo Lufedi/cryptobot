@@ -1,4 +1,4 @@
-package com.cryptobot.cryptobot.Strategy;
+package com.cryptobot.cryptobot.service.strategy;
 
 import org.springframework.stereotype.Component;
 

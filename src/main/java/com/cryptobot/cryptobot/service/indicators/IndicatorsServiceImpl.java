@@ -1,4 +1,4 @@
-package com.cryptobot.cryptobot.service;
+package com.cryptobot.cryptobot.service.indicators;
 
 import org.springframework.stereotype.Service;
 import org.ta4j.core.TimeSeries;

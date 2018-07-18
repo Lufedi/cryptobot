@@ -1,4 +1,4 @@
-package com.cryptobot.cryptobot.service;
+package com.cryptobot.cryptobot.service.indicators;
 
 
 import org.ta4j.core.TimeSeries;

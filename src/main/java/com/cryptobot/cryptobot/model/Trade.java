@@ -22,9 +22,12 @@ public class Trade {
     private String exchange;
     private String pair;
     private boolean open;
+    private String orderId;
 
     @Column(precision = 10, scale = 10)
-    private BigDecimal amount = BigDecimal.ZERO;
+    private BigDecimal fee = BigDecimal.ZERO;
+    @Column(precision = 10, scale = 10)
+    private BigDecimal quantity = BigDecimal.ZERO;
     @Column(precision = 10, scale = 10)
     private BigDecimal priceOpen = BigDecimal.ZERO;
     @Column(precision = 10, scale =  10)

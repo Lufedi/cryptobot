@@ -1,6 +1,5 @@
-package com.cryptobot.cryptobot.Strategy;
+package com.cryptobot.cryptobot.service.strategy;
 
-import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
@@ -11,7 +10,7 @@ import java.util.HashMap;
 
 
 @Component
-public class SimpleStrategy  implements  Strategy{
+public class SimpleStrategyImpl implements  Strategy{
 
 
     @Override

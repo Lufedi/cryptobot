@@ -5,9 +5,11 @@ import com.cryptobot.cryptobot.DTO.BittrexCandle;
 import com.cryptobot.cryptobot.DTO.BittrexCandleResponse;
 import com.cryptobot.cryptobot.DTO.Candle;
 import com.cryptobot.cryptobot.DTO.PoloniexCandle;
-import com.cryptobot.cryptobot.Strategy.Strategy;
 import com.cryptobot.cryptobot.model.Trade;
 import com.cryptobot.cryptobot.repositories.TradeRepository;
+import com.cryptobot.cryptobot.service.exchange.ExchangeService;
+import com.cryptobot.cryptobot.service.indicators.IndicatorsService;
+import com.cryptobot.cryptobot.service.strategy.Strategy;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
@@ -17,7 +19,10 @@ import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.Ticker;
+import org.knowm.xchange.dto.trade.LimitOrder;
+import org.knowm.xchange.dto.trade.MarketOrder;
 import org.knowm.xchange.service.marketdata.MarketDataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -46,11 +51,9 @@ public class CryptobotService {
             //CurrencyPair.DASH_BTC,
             //CurrencyPair.ZEC_BTC,
     };
-    private int MAXIMUM_TRADES = 3;
+    private int MAXIMUM_TRADES = 1;
     private int TICKER_INTERVAL = 5; //minutes
-    private BigDecimal STAKE_AMOUNT = new BigDecimal("0.0000001");
-    private String BITTREX_API = "6f422bb6421a43768803bb224f307f98";
-    private String BITTREX_API_SECRET = "ac09a22e4c4849f1ad5c0dc9da88fd9d";
+    private BigDecimal STAKE_AMOUNT = new BigDecimal("0.002");
 
     private Hashtable<String, BigDecimal> minimunStake= new Hashtable<>();
 
@@ -116,7 +119,7 @@ public class CryptobotService {
         boolean sellSignal  =  strategy.sellSignal(indicators);
 
         if(buySignal){
-            //exchange.getTradeService().placeMarketOrder( new MarketOrder(Order.OrderType.BID, STAKE_AMOUNT, CurrencyPair.LTC_BTC));
+            //
             System.out.println("Buying " + STAKE_AMOUNT.toString() + " LTC");
 
 
@@ -166,6 +169,7 @@ public class CryptobotService {
     private boolean createTrade(Exchange exchange) throws  Exception{
 
         CurrencyPair buyingPair = null;
+
         for(CurrencyPair pair: pairs){
             boolean buySell[] = applyStrategy(pair, TICKER_INTERVAL, exchange);
             if (buySell[0]){
@@ -182,26 +186,36 @@ public class CryptobotService {
         Ticker exchangeTicker = exchange.getMarketDataService().getTicker(buyingPair);
         BigDecimal buyLimit = getTargetBid(exchangeTicker);
         Optional<BigDecimal> stakeAmount = getStakeAmount(exchange);
-
         if(!stakeAmount.isPresent()){
             return false;
         }
 
-        BigDecimal amount = stakeAmount.get().divide(buyLimit, BigDecimal.ROUND_HALF_DOWN);
-        System.out.println("Buying " +  buyingPair + " Amount: "+ amount);
+        BigDecimal quantity = stakeAmount.get().divide(buyLimit, BigDecimal.ROUND_HALF_DOWN);
+        System.out.println("Buying " +  buyingPair + " qty: "+ quantity + " buyLimit: " + buyLimit);
+
+        String orderId = "pp";
+        /*String orderId = exchange.getTradeService().placeLimitOrder(
+                new LimitOrder( Order.OrderType.BID, quantity, buyingPair, null, null, buyLimit)
+        );*/
 
 
 
+
+        BigDecimal fee = exchange.getAccountService().getAccountInfo().getTradingFee();
+        //Create trade
         Trade trade =  new Trade();
         trade.setExchange(exchange.getDefaultExchangeSpecification().getExchangeName());
-        trade.setAmount(amount);
+        trade.setQuantity(quantity);
         trade.isOpen();
         trade.setPair( buyingPair.toString());
+        trade.setOrderId(orderId);
+        trade.setFee(fee);
+        trade.setPriceOpen(buyLimit);
+
         tradeRepository.save(trade);
 
 
-
-        return false;
+        return true;
     }
 
 
