@@ -1,8 +1,6 @@
 package com.cryptobot.cryptobot.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import javax.persistence.*;
 import java.math.BigDecimal;
@@ -32,4 +30,9 @@ public class Trade {
     private BigDecimal priceOpen = BigDecimal.ZERO;
     @Column(precision = 10, scale =  10)
     private BigDecimal priceClose = BigDecimal.ZERO;
+
+    public BigDecimal calculateProfit(BigDecimal closingPrice){
+        return  closingPrice.subtract(priceOpen.subtract(fee));
+    }
+
 }
