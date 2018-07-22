@@ -79,7 +79,7 @@ public class CryptobotService {
         CurrencyPair buyingPair = null;
 
         for(CurrencyPair pair: pairs){
-            boolean buySell[] = strategy.applyStrategy(pair, TICKER_INTERVAL, exchange);
+            boolean buySell[] = strategy.applyStrategy(pair, TICKER_INTERVAL);
             if (buySell[0]){
                 buyingPair = pair;
                 break;
@@ -150,7 +150,7 @@ public class CryptobotService {
                 .getTicker(tradeCurrency)
                 .getBid();
 
-        boolean buy_sell[] = strategy.applyStrategy(tradeCurrency, TICKER_INTERVAL, exchangeService.getExchange());
+        boolean buy_sell[] = strategy.applyStrategy(tradeCurrency, TICKER_INTERVAL);
         if (shouldSell(trade, currentBidRate) && !buy_sell[0]){
             executeSell(trade, currentBidRate);
             return true;

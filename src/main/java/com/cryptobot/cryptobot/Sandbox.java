@@ -135,7 +135,7 @@ public class Sandbox implements CommandLineRunner {
 
         TimeSeries timeSeries = parseTickers(listCandle);
 
-        HashMap<String, Integer> indicators = calculateIndicators(timeSeries);
+        HashMap<String, Double> indicators = calculateIndicators(timeSeries);
 
         boolean buySignal = strategy.buySignal(indicators);
         System.out.println("buy signal " + buySignal);
@@ -153,15 +153,15 @@ public class Sandbox implements CommandLineRunner {
     }
 
 
-    private HashMap<String , Integer> calculateIndicators(TimeSeries timeSeries){
-        HashMap<String, Integer> indicators = new HashMap<>();
+    private HashMap<String , Double> calculateIndicators(TimeSeries timeSeries){
+        HashMap<String, Double> indicators = new HashMap<>();
 
 
         ClosePriceIndicator closePrice = new ClosePriceIndicator(timeSeries);
         int LAST_INDEX = timeSeries.getEndIndex()-1;
         //RSI
         RSIIndicator rsiIndicator  = new RSIIndicator(closePrice, 14);
-        int value =  rsiIndicator.getValue(LAST_INDEX).intValue();
+        double value =  rsiIndicator.getValue(LAST_INDEX).intValue();
         indicators.put( "rsi",value);
 
         System.out.println("f"+ value + " in " + timeSeries.getEndIndex());

@@ -7,5 +7,5 @@ import java.util.HashMap;
 
 public interface IndicatorsService {
 
-    public HashMap<String , Integer> calculateIndicators(TimeSeries timeSeries);
+    public HashMap<String , Double> calculateIndicators(TimeSeries timeSeries);
 }
