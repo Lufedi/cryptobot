@@ -21,22 +21,22 @@ public class IndicatorsServiceImpl  implements  IndicatorsService{
         int LAST_INDEX = timeSeries.getEndIndex()-1;
         //RSI
         RSIIndicator rsiIndicator  = new RSIIndicator(closePrice, 14);
-        double value =  rsiIndicator.getValue(LAST_INDEX).intValue();
+        double value =  rsiIndicator.getValue(LAST_INDEX).doubleValue();
         indicators.put( "rsi",value);
 
         //ADX
         ADXIndicator adxIndicator = new ADXIndicator(timeSeries, 14);
-        value = adxIndicator.getValue( LAST_INDEX).intValue();
+        value = adxIndicator.getValue( LAST_INDEX).doubleValue();
         indicators.put( "adx",value);
 
         //PLUS DI
         PlusDIIndicator plusDIIndicator = new PlusDIIndicator(timeSeries, 14);
-        value = plusDIIndicator.getValue(LAST_INDEX).intValue();
+        value = plusDIIndicator.getValue(LAST_INDEX).doubleValue();
         indicators.put("plus_di", value);
 
         //FASTD
         StochasticOscillatorDIndicator stochasticOscillatorDIndicator = new StochasticOscillatorDIndicator(closePrice);
-        value = stochasticOscillatorDIndicator.getValue(LAST_INDEX).intValue();
+        value = stochasticOscillatorDIndicator.getValue(LAST_INDEX).doubleValue();
         indicators.put("fastd", value);
         return  indicators;
 

@@ -71,10 +71,10 @@ public class IndicatorsServiceImplTest {
         HashMap<String, Double> indicators = indicatorsService.calculateIndicators(baseTimeSeries);
 
 
-        assertEquals(new Double(96.0),  indicators.get("plus_di"));
-        assertEquals(new Double(7407.0),  indicators.get("fastd"));
-        assertEquals(new Double(0.0),  indicators.get("adx"));
-        assertEquals(new Double(45.0),  indicators.get("rsi"));
+        assertEquals(new Double(96),   indicators.get("plus_di"));
+        assertEquals(new Double(7407),  indicators.get("fastd"));
+        assertEquals(new Double(0),  indicators.get("adx"));
+        assertEquals(new Double(45),  indicators.get("rsi"));
 
 
 
