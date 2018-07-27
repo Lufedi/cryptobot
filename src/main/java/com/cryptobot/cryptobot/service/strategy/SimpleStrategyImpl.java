@@ -15,7 +15,9 @@ import org.knowm.xchange.Exchange;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.service.marketdata.MarketDataService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 import org.ta4j.core.BaseBar;
 import org.ta4j.core.BaseTimeSeries;
 import org.ta4j.core.TimeSeries;
@@ -35,7 +37,8 @@ import java.util.List;
  */
 
 @Slf4j
-@Component
+
+@Service
 public class SimpleStrategyImpl implements  Strategy{
 
     @Autowired
@@ -64,7 +67,7 @@ public class SimpleStrategyImpl implements  Strategy{
 
 
 
-    public boolean[] applyStrategy(CurrencyPair pair, int interval)  throws TradeException {
+    public StrategyResult applyStrategy(CurrencyPair pair, int interval)  throws TradeException {
         try{
 
             TimeSeries timeSeries =  exchangeService.getTickerHistory(pair, interval);
@@ -74,8 +77,8 @@ public class SimpleStrategyImpl implements  Strategy{
             log.debug("buy signal " + buySignal);
 
             boolean sellSignal  =  this.sellSignal(indicators);
-            boolean a[] = {buySignal, sellSignal};
-            return  a;
+            return new StrategyResult(buySignal, sellSignal);
+
         }catch (Exception e){
             throw new TradeException(e.toString(), e);
         }

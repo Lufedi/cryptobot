@@ -127,9 +127,9 @@ public class SimpleStrategyImplTest {
 
         //True, True
         when(exchangeService.getTickerHistory(any(CurrencyPair.class), anyInt())).thenReturn(baseTimeSeries);
-        boolean[] signals =  simpleStrategy.applyStrategy(CurrencyPair.ETH_BTC, 5);
-        assertTrue(signals[0]);
-        assertTrue(signals[1]);
+        StrategyResult signals =  simpleStrategy.applyStrategy(CurrencyPair.ETH_BTC, 5);
+        assertTrue(signals.buySignal());
+        assertTrue(signals.sellSignal());
 
 
         //False , False
@@ -142,8 +142,8 @@ public class SimpleStrategyImplTest {
 
         when(indicatorsService.calculateIndicators( any(TimeSeries.class) )).thenReturn( indicators);
         signals =  simpleStrategy.applyStrategy(CurrencyPair.ETH_BTC, 5);
-        assertFalse(signals[0]);
-        assertFalse(signals[1]);
+        assertFalse(signals.buySignal());
+        assertFalse(signals.sellSignal());
 
     }
 

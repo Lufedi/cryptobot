@@ -2,6 +2,7 @@ package com.cryptobot.cryptobot.service.indicators;
 
 import org.springframework.stereotype.Service;
 import org.ta4j.core.TimeSeries;
+import org.ta4j.core.indicators.MACDIndicator;
 import org.ta4j.core.indicators.RSIIndicator;
 import org.ta4j.core.indicators.StochasticOscillatorDIndicator;
 import org.ta4j.core.indicators.adx.ADXIndicator;
@@ -26,7 +27,7 @@ public class IndicatorsServiceImpl  implements  IndicatorsService{
 
         //ADX
         ADXIndicator adxIndicator = new ADXIndicator(timeSeries, 14);
-        value = adxIndicator.getValue( LAST_INDEX).doubleValue();
+        value = adxIndicator.getValue( LAST_INDEX).intValue();
         indicators.put( "adx",value);
 
         //PLUS DI
@@ -38,6 +39,14 @@ public class IndicatorsServiceImpl  implements  IndicatorsService{
         StochasticOscillatorDIndicator stochasticOscillatorDIndicator = new StochasticOscillatorDIndicator(closePrice);
         value = stochasticOscillatorDIndicator.getValue(LAST_INDEX).doubleValue();
         indicators.put("fastd", value);
+
+        MACDIndicator macdIndicator = new MACDIndicator(closePrice);
+        value = macdIndicator.getValue(LAST_INDEX).doubleValue();
+        indicators.put("madc", value);
+
+
+        indicators.keySet().stream().forEach( key -> System.out.println("key " + key + " value " + indicators.get(key)));
+
         return  indicators;
 
     }

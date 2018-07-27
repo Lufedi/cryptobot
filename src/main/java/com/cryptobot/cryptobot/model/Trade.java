@@ -21,6 +21,8 @@ public class Trade {
     private String pair;
     private boolean open;
     private String orderId;
+    private String closeOrderId;
+
 
     @Column(precision = 10, scale = 10)
     private BigDecimal fee = BigDecimal.ZERO;
@@ -34,5 +36,7 @@ public class Trade {
     public BigDecimal calculateProfit(BigDecimal closingPrice){
         return  closingPrice.subtract(priceOpen.subtract(fee));
     }
+
+
 
 }

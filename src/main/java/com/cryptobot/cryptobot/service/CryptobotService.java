@@ -6,12 +6,15 @@ import com.cryptobot.cryptobot.model.Trade;
 import com.cryptobot.cryptobot.repositories.TradeRepository;
 import com.cryptobot.cryptobot.service.exchange.ExchangeService;
 import com.cryptobot.cryptobot.service.strategy.Strategy;
+import com.cryptobot.cryptobot.service.strategy.StrategyResult;
 import lombok.extern.slf4j.Slf4j;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.Ticker;
+import org.knowm.xchange.dto.trade.LimitOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -34,7 +37,6 @@ public class CryptobotService {
 
     private Hashtable<String, BigDecimal> minimunStake= new Hashtable<>();
 
-
     @Autowired
     private Strategy strategy;
 
@@ -55,9 +57,9 @@ public class CryptobotService {
 
             List<Trade> trades =  tradeRepository.findAll();
 
-            for( Trade trade: trades){
-                tryToSell(trade, bittrexExchange);
-            }
+            trades.stream().forEach( trade ->{
+                try{ tryToSell(trade); }catch(Exception e){ throw  new RuntimeException(e);}
+            });
 
             if( trades.size() < MAXIMUM_TRADES){
                 tryToBuy(bittrexExchange);
@@ -78,18 +80,21 @@ public class CryptobotService {
 
         CurrencyPair buyingPair = null;
 
-        for(CurrencyPair pair: pairs){
-            boolean buySell[] = strategy.applyStrategy(pair, TICKER_INTERVAL);
-            if (buySell[0]){
-                buyingPair = pair;
-                break;
-            }
-        }
+         Optional<CurrencyPair> optionalBuyingPair =
+                 Arrays.stream(pairs).filter( currencyPair -> {
+                                                try{
+                                                    return strategy.applyStrategy(currencyPair, TICKER_INTERVAL).buySignal();
+                                                }catch (TradeException e){
+                                                    throw  new RuntimeException(e.getMessage(), e);
+                                                }
+                                            })
+                                     .findFirst();
 
-
-        if( buyingPair == null){
+        if(!optionalBuyingPair.isPresent()){
             return false;
         }
+
+        buyingPair = optionalBuyingPair.get();
 
         Ticker exchangeTicker = exchange.getMarketDataService().getTicker(buyingPair);
         BigDecimal buyLimit = getTargetBid(exchangeTicker);
@@ -101,10 +106,10 @@ public class CryptobotService {
         BigDecimal quantity = stakeAmount.get().divide(buyLimit, BigDecimal.ROUND_HALF_DOWN);
         
         log.debug("Buying " +  buyingPair + " qty: "+ quantity + " buyLimit: " + buyLimit);
-        String orderId = "pp";
-        /*String orderId = exchange.getTradeService().placeLimitOrder(
+
+        String orderId = exchange.getTradeService().placeLimitOrder(
                 new LimitOrder( Order.OrderType.BID, quantity, buyingPair, null, null, buyLimit)
-        );*/
+        );
 
 
         BigDecimal fee = exchange.getAccountService().getAccountInfo().getTradingFee();
@@ -133,7 +138,7 @@ public class CryptobotService {
         }
     }
 
-    private  void tryToSell(Trade trade, Exchange exchange) throws TradeException, IOException{
+    private  void tryToSell(Trade trade) throws TradeException, IOException{
         if( trade.isOpen() && trade.getOrderId() != null){
             manageTrade(trade);
         }
@@ -150,8 +155,8 @@ public class CryptobotService {
                 .getTicker(tradeCurrency)
                 .getBid();
 
-        boolean buy_sell[] = strategy.applyStrategy(tradeCurrency, TICKER_INTERVAL);
-        if (shouldSell(trade, currentBidRate) && !buy_sell[0]){
+        StrategyResult strategyResult = strategy.applyStrategy(tradeCurrency, TICKER_INTERVAL);
+        if (shouldSell(trade, currentBidRate) && !strategyResult.buySignal()){
             executeSell(trade, currentBidRate);
             return true;
         }
@@ -159,7 +164,25 @@ public class CryptobotService {
     }
 
 
-    public void executeSell(Trade trade, BigDecimal bigDecimal){
+    public void executeSell(Trade trade, BigDecimal limit) throws TradeException{
+        try{
+            Exchange exchange = this.exchangeService.getExchange();
+            CurrencyPair tradeCurrency = new CurrencyPair(trade.getPair());
+
+            String orderId = exchange.getTradeService().placeLimitOrder(
+                            new LimitOrder( Order.OrderType.ASK, trade.getQuantity(),
+                            tradeCurrency, null, null, limit));
+
+            trade.setCloseOrderId(orderId);
+            trade.setPriceClose(limit);
+
+            log.debug("Selling CUR: "  + tradeCurrency  + ", QTy: " + trade.getQuantity() + ", rate: " + limit);
+
+        }catch (IOException e){
+
+            throw new TradeException(e.getMessage(), e);
+        }
+
 
     }
 

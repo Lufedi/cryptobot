@@ -1,10 +1,13 @@
 package com.cryptobot.cryptobot.DTO;
 
+import lombok.Data;
+
 import java.util.List;
 
 /**
  * Created by Felipe Díaz on 1/05/2018.
  */
+@Data
 public class BittrexCandleResponse {
 
 /*

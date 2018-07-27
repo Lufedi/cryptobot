@@ -14,5 +14,5 @@ public interface Strategy {
 
     public boolean sellSignal(HashMap<String , Double> indicators );
     public boolean buySignal(HashMap<String , Double> indicators );
-    public boolean[] applyStrategy(CurrencyPair pair, int interval) throws TradeException;
+    public StrategyResult applyStrategy(CurrencyPair pair, int interval) throws TradeException;
 }
