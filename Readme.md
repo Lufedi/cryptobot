@@ -9,7 +9,7 @@ Use daily exchange data (candles) together with technical analysis models and cr
 
 ### Features
 
-- [x] Java 8
+- [ ] Ad Java docs IMPORTANT!!!! <- plzzzz
 - [x] Persist trades
 - [x] XChange integration
 - [x] Use ta4j technical analysis Strategies
