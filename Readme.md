@@ -35,4 +35,3 @@ A Java library for technical analysis
 
 ###### XChange [ link](https://github.com/knowm/XChange "XChange")
 XChange is a Java library providing a streamlined API for interacting with 60+ Bitcoin and Altcoin exchanges
-
