@@ -175,6 +175,7 @@ public class CryptobotService {
 
             trade.setCloseOrderId(orderId);
             trade.setPriceClose(limit);
+            tradeRepository.save(trade);
 
             log.debug("Selling CUR: "  + tradeCurrency  + ", QTy: " + trade.getQuantity() + ", rate: " + limit);
 
@@ -196,7 +197,7 @@ public class CryptobotService {
         BittrexAccountServiceRaw bittrexAccountServiceRaw =  (BittrexAccountServiceRaw) exchange.getAccountService();
         BigDecimal balance = bittrexAccountServiceRaw.getBittrexBalance(Currency.BTC).getBalance();
 
-        if( balance.compareTo(STAKE_AMOUNT) >= 1){
+        if(balance.compareTo(STAKE_AMOUNT) >= 1){
             return Optional.of(STAKE_AMOUNT);
         }
         return Optional.empty();
