@@ -1,15 +1,15 @@
 package com.cryptobot.cryptobot.service.exchange;
 
 
-import com.cryptobot.cryptobot.DTO.BittrexCandle;
-import com.cryptobot.cryptobot.DTO.BittrexCandleResponse;
-import com.cryptobot.cryptobot.DTO.Candle;
-import com.cryptobot.cryptobot.DTO.PoloniexCandle;
+import com.cryptobot.cryptobot.config.AuthenticationConfig;
+import com.cryptobot.cryptobot.dto.BittrexCandle;
+import com.cryptobot.cryptobot.dto.BittrexCandleResponse;
+import com.cryptobot.cryptobot.dto.Candle;
+import com.cryptobot.cryptobot.dto.PoloniexCandle;
 import com.cryptobot.cryptobot.exceptions.TradeException;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import jdk.nashorn.internal.runtime.options.Option;
 import lombok.extern.slf4j.Slf4j;
 import org.knowm.xchange.BaseExchange;
 import org.knowm.xchange.Exchange;
@@ -17,7 +17,8 @@ import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.bittrex.BittrexExchange;
 import org.knowm.xchange.currency.CurrencyPair;
-import org.springframework.stereotype.Component;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.ta4j.core.BaseBar;
 import org.ta4j.core.BaseTimeSeries;
@@ -38,19 +39,16 @@ import java.util.Optional;
 public class ExchangeServiceImpl implements ExchangeService {
 
 
+    private final AuthenticationConfig properties;
 
-
-    private String EXCHANGE_API = "6f422bb6421a43768803bb224f307f98";
-    private String EXCHANGE_SECRET = "ac09a22e4c4849f1ad5c0dc9da88fd9d";
-
+    @Autowired
+    public ExchangeServiceImpl(AuthenticationConfig properties){
+        this.properties = properties;
+    }
 
     //Singleton
     private Exchange exchange;
-
-    private ExchangeSpecification exchangeSpecification;
     private BaseExchange baseExchange = new BittrexExchange();
-
-
 
     public Exchange getExchange(){
         if( exchange == null){
@@ -59,14 +57,12 @@ public class ExchangeServiceImpl implements ExchangeService {
         return exchange;
     }
 
-    public Exchange createExchange(){
+    private Exchange createExchange(){
         ExchangeSpecification exchangeSpecification = baseExchange.getDefaultExchangeSpecification();
-        exchangeSpecification.setApiKey(EXCHANGE_API);
-        exchangeSpecification.setSecretKey(EXCHANGE_SECRET);
+        exchangeSpecification.setApiKey(properties.getKey());
+        exchangeSpecification.setSecretKey(properties.getSecret());
         return ExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
     }
-
-
 
     public TimeSeries getTickerHistory(CurrencyPair pair, int interval) throws TradeException{
         String name = this.getExchange().getDefaultExchangeSpecification().getExchangeName();
@@ -89,9 +85,6 @@ public class ExchangeServiceImpl implements ExchangeService {
         return parseTickers(candles);
 
     }
-
-
-
 
     private List<Candle> getBittrexTickerHistory(CurrencyPair pair, int interval, Exchange exchange) throws  Exception{
 
@@ -175,8 +168,6 @@ public class ExchangeServiceImpl implements ExchangeService {
 
         return result;
     }
-
-
 
 
     public TimeSeries parseTickers(List<Candle> candles){

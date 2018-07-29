@@ -1,36 +1,15 @@
 package com.cryptobot.cryptobot.service.strategy;
 
-import com.cryptobot.cryptobot.DTO.BittrexCandle;
-import com.cryptobot.cryptobot.DTO.BittrexCandleResponse;
-import com.cryptobot.cryptobot.DTO.Candle;
-import com.cryptobot.cryptobot.DTO.PoloniexCandle;
 import com.cryptobot.cryptobot.exceptions.TradeException;
 import com.cryptobot.cryptobot.service.exchange.ExchangeService;
 import com.cryptobot.cryptobot.service.indicators.IndicatorsService;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
-import org.knowm.xchange.Exchange;
 import org.knowm.xchange.currency.CurrencyPair;
-import org.knowm.xchange.service.marketdata.MarketDataService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Primary;
-import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
-import org.ta4j.core.BaseBar;
-import org.ta4j.core.BaseTimeSeries;
 import org.ta4j.core.TimeSeries;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.lang.reflect.Type;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.time.*;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 /**
  * Created by Felipe Díaz on 1/05/2018.

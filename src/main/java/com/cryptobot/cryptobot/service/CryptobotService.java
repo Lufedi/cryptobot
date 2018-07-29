@@ -1,6 +1,7 @@
 package com.cryptobot.cryptobot.service;
 
 
+import com.cryptobot.cryptobot.config.AuthenticationConfig;
 import com.cryptobot.cryptobot.exceptions.TradeException;
 import com.cryptobot.cryptobot.model.Trade;
 import com.cryptobot.cryptobot.repositories.TradeRepository;
@@ -49,6 +50,8 @@ public class CryptobotService {
 
     @Scheduled(fixedRate = 10000)
     public void runBot() throws  Exception{
+
+
 
         try{
 

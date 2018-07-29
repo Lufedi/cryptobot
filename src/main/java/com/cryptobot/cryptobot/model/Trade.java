@@ -6,7 +6,9 @@ import javax.persistence.*;
 import java.math.BigDecimal;
 
 /**
- * Created by Felipe Díaz on 15/04/2018.
+ * Domain object representing the trades executed by the Bot
+ *
+ * @author Lufedi
  */
 @Data
 @NoArgsConstructor

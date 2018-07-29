@@ -45,7 +45,6 @@ public class IndicatorsServiceImpl  implements  IndicatorsService{
         indicators.put("madc", value);
 
 
-        indicators.keySet().stream().forEach( key -> System.out.println("key " + key + " value " + indicators.get(key)));
 
         return  indicators;
 

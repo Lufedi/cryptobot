@@ -1,4 +1,4 @@
-package com.cryptobot.cryptobot.DTO;
+package com.cryptobot.cryptobot.dto;
 
 import lombok.Data;
 

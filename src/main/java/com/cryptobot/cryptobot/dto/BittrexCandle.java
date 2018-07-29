@@ -1,10 +1,11 @@
-package com.cryptobot.cryptobot.DTO;
+package com.cryptobot.cryptobot.dto;
 
 import java.math.BigDecimal;
 import java.util.Date;
 
 /**
- * Created by Felipe Díaz on 1/05/2018.
+ *
+ * @author Lufedi
  */
 public class BittrexCandle  extends Candle{
     /*
