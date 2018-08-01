@@ -1,23 +1,32 @@
 package com.cryptobot.cryptobot.service.exchange;
 
+import com.cryptobot.cryptobot.config.AuthenticationConfig;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.knowm.xchange.Exchange;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.MockitoJUnitRunner;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
-import org.springframework.test.context.junit4.SpringRunner;
 
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ExchangeServiceImplTest {
 
+    @Mock
+    AuthenticationConfig authenticationConfig;
+
+
     @InjectMocks
     ExchangeServiceImpl exchangeService;
+
+    @Before
+    public void setUp() throws Exception {
+        when(authenticationConfig.getSecret()).thenReturn("mysecret");
+        when(authenticationConfig.getKey()).thenReturn("mykey");
+    }
 
     @Test
     public void getExchangeTest() {

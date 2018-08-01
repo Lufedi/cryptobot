@@ -6,15 +6,26 @@ import org.springframework.context.annotation.PropertySource;
 
 /**
  * Represents the Authentication configuration
+ * Look for api and secret key in exchange.properties file
+ *
+ * CAUTION SHOWING THE DATA IN THIS CLASS
+ * DO NOT UPLOAD YOUR PROPERTIES FILE TO PUBLIC REPOSITORIES
+ *
  * @author Lufedi
  */
 @Configuration
 @PropertySource("classpath:exchange.properties")
 public class AuthenticationConfig {
 
+    /**
+     * API Key used in the exchange
+     */
     @Value("${exchange.config.api.key}")
     private  String key;
 
+    /**
+     * Secret key used in the exchange
+     */
     @Value("${exchange.config.api.secret}")
     private  String secret;
 

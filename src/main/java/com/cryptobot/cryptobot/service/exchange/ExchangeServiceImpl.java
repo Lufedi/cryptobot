@@ -57,7 +57,7 @@ public class ExchangeServiceImpl implements ExchangeService {
         return exchange;
     }
 
-    private Exchange createExchange(){
+    public Exchange createExchange(){
         ExchangeSpecification exchangeSpecification = baseExchange.getDefaultExchangeSpecification();
         exchangeSpecification.setApiKey(properties.getKey());
         exchangeSpecification.setSecretKey(properties.getSecret());

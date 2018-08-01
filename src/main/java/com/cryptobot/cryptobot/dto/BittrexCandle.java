@@ -16,7 +16,6 @@ public class BittrexCandle  extends Candle{
     BigDecimal open;
     BigDecimal close;
     BigDecimal volume;
-
      */
 
     public BigDecimal last;
