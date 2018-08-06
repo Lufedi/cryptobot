@@ -1,22 +1,20 @@
 package com.cryptobot.cryptobot.service;
 
 
-import com.cryptobot.cryptobot.config.AuthenticationConfig;
 import com.cryptobot.cryptobot.exceptions.TradeException;
+import com.cryptobot.cryptobot.exchange.ExchangeAdapter;
+import com.cryptobot.cryptobot.exchange.ExchangeFactory;
 import com.cryptobot.cryptobot.model.Trade;
 import com.cryptobot.cryptobot.repositories.TradeRepository;
-import com.cryptobot.cryptobot.service.exchange.ExchangeService;
 import com.cryptobot.cryptobot.service.strategy.Strategy;
 import com.cryptobot.cryptobot.service.strategy.StrategyResult;
 import lombok.extern.slf4j.Slf4j;
-import org.knowm.xchange.Exchange;
-import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
+
+
+
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
-import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.Ticker;
-import org.knowm.xchange.dto.trade.LimitOrder;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import java.io.IOException;
@@ -38,25 +36,27 @@ public class CryptobotService {
 
     private Hashtable<String, BigDecimal> minimunStake= new Hashtable<>();
 
-    @Autowired
+    private ExchangeAdapter exchange;
+
     private Strategy strategy;
 
-    @Autowired
     private TradeRepository tradeRepository;
 
-    @Autowired
-    private ExchangeService exchangeService;
+    private ExchangeFactory exchangeFactory;
 
+    public CryptobotService(Strategy strategy, TradeRepository tradeRepository, ExchangeFactory exchangeFactory) {
+        this.strategy = strategy;
+        this.tradeRepository = tradeRepository;
+        this.exchangeFactory = exchangeFactory;
+    }
 
     @Scheduled(fixedRate = 10000)
     public void runBot() throws  Exception{
 
-
-
         try{
 
-            Exchange bittrexExchange = exchangeService.getExchange();
-            minimunStake.put(bittrexExchange.toString(), new BigDecimal("0.00001"));
+            exchange = exchangeFactory.getExchange();
+            minimunStake.put(exchange.toString(), new BigDecimal("0.00001"));
 
             List<Trade> trades =  tradeRepository.findAll();
 
@@ -65,7 +65,7 @@ public class CryptobotService {
             });
 
             if( trades.size() < MAXIMUM_TRADES){
-                tryToBuy(bittrexExchange);
+                tryToBuy(exchange);
             }
 
         }catch (Exception e){
@@ -79,19 +79,18 @@ public class CryptobotService {
 
 
 
-    private boolean createTrade(Exchange exchange) throws  Exception{
+    private boolean createTrade(ExchangeAdapter exchange) throws  Exception{
 
         CurrencyPair buyingPair = null;
 
          Optional<CurrencyPair> optionalBuyingPair =
-                 Arrays.stream(pairs).filter( currencyPair -> {
-                                                try{
-                                                    return strategy.applyStrategy(currencyPair, TICKER_INTERVAL).buySignal();
-                                                }catch (TradeException e){
-                                                    throw  new RuntimeException(e.getMessage(), e);
-                                                }
-                                            })
-                                     .findFirst();
+             Arrays.stream(pairs).filter( currencyPair -> {
+                try{
+                    return strategy.applyStrategy(currencyPair, exchange.getTimeSeries(currencyPair)).buySignal();
+                }catch (TradeException e){
+                    throw  new RuntimeException(e.getMessage(), e);
+                }
+             }).findFirst();
 
         if(!optionalBuyingPair.isPresent()){
             return false;
@@ -99,7 +98,7 @@ public class CryptobotService {
 
         buyingPair = optionalBuyingPair.get();
 
-        Ticker exchangeTicker = exchange.getMarketDataService().getTicker(buyingPair);
+        Ticker exchangeTicker = exchange.getTicker(buyingPair);
         BigDecimal buyLimit = getTargetBid(exchangeTicker);
         Optional<BigDecimal> stakeAmount = getStakeAmount(exchange);
         if(!stakeAmount.isPresent()){
@@ -110,15 +109,13 @@ public class CryptobotService {
         
         log.debug("Buying " +  buyingPair + " qty: "+ quantity + " buyLimit: " + buyLimit);
 
-        String orderId = exchange.getTradeService().placeLimitOrder(
-                new LimitOrder( Order.OrderType.BID, quantity, buyingPair, null, null, buyLimit)
-        );
+        String orderId = exchange.buy(buyingPair, quantity, buyLimit);
 
 
-        BigDecimal fee = exchange.getAccountService().getAccountInfo().getTradingFee();
+        BigDecimal fee = exchange.getTradingFee();
         //Create trade
         Trade trade =  new Trade();
-        trade.setExchange(exchange.getDefaultExchangeSpecification().getExchangeName());
+        trade.setExchange(exchange.getName());
         trade.setQuantity(quantity);
         trade.isOpen();
         trade.setPair( buyingPair.toString());
@@ -152,13 +149,9 @@ public class CryptobotService {
             throw new TradeException("Trying to sell closed trade");
         }
         CurrencyPair tradeCurrency = new CurrencyPair(trade.getPair());
-        BigDecimal currentBidRate = exchangeService
-                .getExchange()
-                .getMarketDataService()
-                .getTicker(tradeCurrency)
-                .getBid();
+        BigDecimal currentBidRate = exchange.getTicker(tradeCurrency).getBid();
 
-        StrategyResult strategyResult = strategy.applyStrategy(tradeCurrency, TICKER_INTERVAL);
+        StrategyResult strategyResult = strategy.applyStrategy(tradeCurrency, exchange.getTimeSeries(tradeCurrency));
         if (shouldSell(trade, currentBidRate) && !strategyResult.buySignal()){
             executeSell(trade, currentBidRate);
             return true;
@@ -169,25 +162,18 @@ public class CryptobotService {
 
     public void executeSell(Trade trade, BigDecimal limit) throws TradeException{
         try{
-            Exchange exchange = this.exchangeService.getExchange();
+
             CurrencyPair tradeCurrency = new CurrencyPair(trade.getPair());
-
-            String orderId = exchange.getTradeService().placeLimitOrder(
-                            new LimitOrder( Order.OrderType.ASK, trade.getQuantity(),
-                            tradeCurrency, null, null, limit));
-
+            String orderId = exchange.sell(tradeCurrency, trade.getQuantity(), limit);
             trade.setCloseOrderId(orderId);
             trade.setPriceClose(limit);
             tradeRepository.save(trade);
 
             log.debug("Selling CUR: "  + tradeCurrency  + ", QTy: " + trade.getQuantity() + ", rate: " + limit);
 
-        }catch (IOException e){
-
-            throw new TradeException(e.getMessage(), e);
+        }catch (final TradeException exception){
+            throw new TradeException(exception);
         }
-
-
     }
 
     public boolean shouldSell(Trade trade, BigDecimal bidRate){
@@ -196,17 +182,15 @@ public class CryptobotService {
     }
 
 
-    public Optional<BigDecimal> getStakeAmount(Exchange exchange)  throws Exception{
-        BittrexAccountServiceRaw bittrexAccountServiceRaw =  (BittrexAccountServiceRaw) exchange.getAccountService();
-        BigDecimal balance = bittrexAccountServiceRaw.getBittrexBalance(Currency.BTC).getBalance();
-
+    public Optional<BigDecimal> getStakeAmount(ExchangeAdapter exchange)  throws Exception{
+        BigDecimal balance = exchange.getBalance(Currency.BTC);
         if(balance.compareTo(STAKE_AMOUNT) >= 1){
             return Optional.of(STAKE_AMOUNT);
         }
         return Optional.empty();
     }
 
-    private boolean tryToBuy(Exchange exchange) throws  Exception, IOException {
+    private boolean tryToBuy(ExchangeAdapter exchange) throws  Exception, IOException {
         if( createTrade(exchange)){
             return true;
         }else{

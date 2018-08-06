@@ -1,7 +1,8 @@
 package com.cryptobot.cryptobot.service.strategy;
 
 import com.cryptobot.cryptobot.exceptions.TradeException;
-import com.cryptobot.cryptobot.service.exchange.ExchangeService;
+import com.cryptobot.cryptobot.exchange.ExchangeAdapter;
+import com.cryptobot.cryptobot.exchange.ExchangeFactory;
 import com.cryptobot.cryptobot.service.indicators.IndicatorsService;
 import lombok.extern.slf4j.Slf4j;
 import org.knowm.xchange.currency.CurrencyPair;
@@ -18,8 +19,7 @@ import java.util.HashMap;
 public class RsiAndMadcStrategy implements Strategy {
 
 
-    @Autowired
-    ExchangeService exchangeService;
+
 
     @Autowired
     private IndicatorsService indicatorsService;
@@ -34,10 +34,9 @@ public class RsiAndMadcStrategy implements Strategy {
         return (indicators.get("rsi") > 50 && indicators.get("madc") > 0);    }
 
     @Override
-    public StrategyResult applyStrategy(CurrencyPair pair, int interval) throws TradeException {
+    public StrategyResult applyStrategy(CurrencyPair pair, TimeSeries timeSeries) throws TradeException {
         try{
 
-            TimeSeries timeSeries =  exchangeService.getTickerHistory(pair, interval);
             HashMap<String, Double> indicators =  indicatorsService.calculateIndicators(timeSeries);
 
             boolean buySignal = this.buySignal(indicators);

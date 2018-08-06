@@ -22,12 +22,20 @@ public class AuthenticationConfig {
      */
     @Value("${exchange.config.api.key}")
     private  String key;
-
     /**
      * Secret key used in the exchange
      */
     @Value("${exchange.config.api.secret}")
     private  String secret;
+    /**
+     * Exchange name
+     */
+    @Value("${exchange.config.name}")
+    private String exchangeName;
+
+    public String getExchangeName() { return exchangeName; }
+
+    public void setExchangeName(String exchangeName) { this.exchangeName = exchangeName; }
 
     public String getKey() {
         return key;

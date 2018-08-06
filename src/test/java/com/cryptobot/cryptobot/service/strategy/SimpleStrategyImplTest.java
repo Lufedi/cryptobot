@@ -1,7 +1,7 @@
 package com.cryptobot.cryptobot.service.strategy;
 
-import com.cryptobot.cryptobot.exceptions.TradeException;
-import com.cryptobot.cryptobot.service.exchange.ExchangeService;
+
+import com.cryptobot.cryptobot.exchange.ExchangeAdapter;
 import com.cryptobot.cryptobot.service.indicators.IndicatorsService;
 import org.json.JSONArray;
 import org.junit.Before;
@@ -25,7 +25,6 @@ import java.util.HashMap;
 
 import static org.junit.Assert.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -35,7 +34,7 @@ public class SimpleStrategyImplTest {
 
 
     @Mock
-    ExchangeService exchangeService;
+    ExchangeAdapter exchangeAdapter;
 
     @Mock
     IndicatorsService indicatorsService;
@@ -126,8 +125,8 @@ public class SimpleStrategyImplTest {
         when(indicatorsService.calculateIndicators( any(TimeSeries.class) )).thenReturn( indicators);
 
         //True, True
-        when(exchangeService.getTickerHistory(any(CurrencyPair.class), anyInt())).thenReturn(baseTimeSeries);
-        StrategyResult signals =  simpleStrategy.applyStrategy(CurrencyPair.ETH_BTC, 5);
+
+        StrategyResult signals =  simpleStrategy.applyStrategy(CurrencyPair.ETH_BTC, baseTimeSeries);
         assertTrue(signals.buySignal());
         assertTrue(signals.sellSignal());
 
@@ -141,7 +140,7 @@ public class SimpleStrategyImplTest {
         indicators.put("minus_di", -0.5);
 
         when(indicatorsService.calculateIndicators( any(TimeSeries.class) )).thenReturn( indicators);
-        signals =  simpleStrategy.applyStrategy(CurrencyPair.ETH_BTC, 5);
+        signals =  simpleStrategy.applyStrategy(CurrencyPair.ETH_BTC, baseTimeSeries);
         assertFalse(signals.buySignal());
         assertFalse(signals.sellSignal());
 
